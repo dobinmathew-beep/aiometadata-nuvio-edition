@@ -10,9 +10,11 @@ RUN npm run build && npm run build:backend
 FROM mirror.gcr.io/library/node:24-alpine3.23 AS runner
 WORKDIR /app
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later AND FSL-1.1-ALv2"
-RUN apk add --no-cache ca-certificates wget valkey
+RUN apk add --no-cache ca-certificates wget valkey libstdc++ && \
+    apk add --no-cache --virtual .build-deps build-base python3 linux-headers
 COPY package*.json package-lock.json* ./
-RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev && \
+    apk del .build-deps
 COPY --from=builder /app/addon ./addon
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
