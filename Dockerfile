@@ -1,5 +1,7 @@
 FROM mirror.gcr.io/library/node:24-alpine3.23 AS builder
 WORKDIR /app
+# Compile native Node modules when an ARM64/musl prebuilt binary is unavailable.
+RUN apk add --no-cache build-base python3 linux-headers
 COPY package*.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
