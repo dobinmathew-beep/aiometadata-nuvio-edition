@@ -1,14 +1,14 @@
-FROM mirror.gcr.io/library/node:24-alpine AS builder
+FROM mirror.gcr.io/library/node:24-alpine3.23 AS builder
 WORKDIR /app
 COPY package*.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 RUN npm run build && npm run build:backend
 
-FROM mirror.gcr.io/library/node:24-alpine AS runner
+FROM mirror.gcr.io/library/node:24-alpine3.23 AS runner
 WORKDIR /app
 LABEL org.opencontainers.image.licenses="AGPL-3.0-or-later AND FSL-1.1-ALv2"
-RUN apk add --no-cache ca-certificates wget
+RUN apk add --no-cache ca-certificates wget valkey
 COPY package*.json package-lock.json* ./
 RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
 COPY --from=builder /app/addon ./addon
