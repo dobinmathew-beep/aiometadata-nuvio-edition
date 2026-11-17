@@ -1,0 +1,21 @@
+# Free hobby deployment for the Nuvio-specific AIOMetadata fork.
+# WARNING: Render Free has an ephemeral filesystem and sleeps after 15 minutes idle.
+# SQLite and the in-container Valkey cache will reset after restarts, sleep, or redeploys.
+services:
+  - type: web
+    name: aiometadata-nuvio-free
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: dev
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URI
+        value: sqlite:///tmp/aiometadata.db
+      - key: REDIS_URL
+        value: redis://127.0.0.1:6379
