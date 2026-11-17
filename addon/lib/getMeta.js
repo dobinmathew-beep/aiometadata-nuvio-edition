@@ -214,6 +214,29 @@ const isReleasedBy = (dateValue, nowMs) => {
   return time !== null && time <= nowMs;
 };
 
+/**
+ * Nuvio-compatible TMDB episode release timestamp resolver.
+ * TMDB air_date is normally date-only: anchor it at 00:00:00 UTC.
+ * Preserve an explicitly timezone-qualified datetime as its actual instant.
+ * Never invent a time for ambiguous or invalid values.
+ */
+const resolveTmdbEpisodeReleaseTimestamp = (value) => {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const input = value.trim();
+  const dateOnly = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(input);
+  if (dateOnly) {
+    const year = Number(dateOnly[1]);
+    const month = Number(dateOnly[2]);
+    const day = Number(dateOnly[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+    return date;
+  }
+  if (!/^\\d{4}-\\d{2}-\\d{2}T.*(?:Z|[+-]\\d{2}:\\d{2})$/i.test(input)) return null;
+  const timestamp = Date.parse(input);
+  return Number.isFinite(timestamp) ? new Date(timestamp) : null;
+};
+
 const syncVideoAvailabilityFromReleased = (videos, nowMs = Date.now()) => {
   if (!Array.isArray(videos)) return videos;
   for (const video of videos) {
@@ -1921,9 +1944,7 @@ async function buildTmdbSeriesResponse(stremioId, seriesData, language, config, 
           episodeId = `tmdb:${tmdbId}:${ep.season_number}:${ep.episode_number}`;
         }
 
-        const releasedAt = ep.air_date
-          ? resolveReleaseTimestamp(ep.air_date, { originCountry: seriesData.origin_country?.[0] })
-          : null;
+        const releasedAt = resolveTmdbEpisodeReleaseTimestamp(ep.air_date);
         let thumbnailUrl;
         {
           const isUnaired = !releasedAt || releasedAt.getTime() > nowMs;
