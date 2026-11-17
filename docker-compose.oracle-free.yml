@@ -1,0 +1,28 @@
+services:
+  aiometadata:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: aiometadata-nuvio:oracle-free
+    container_name: aiometadata-nuvio
+    restart: unless-stopped
+    init: true
+    ports:
+      - "3232:3232"
+    environment:
+      NODE_ENV: production
+      PORT: "3232"
+      DATABASE_URI: sqlite:///data/aiometadata.db
+      REDIS_URL: redis://127.0.0.1:6379
+    volumes:
+      - aiometadata-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:3232/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  aiometadata-data:
+    name: aiometadata-nuvio-data
